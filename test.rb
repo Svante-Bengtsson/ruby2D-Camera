@@ -1,5 +1,4 @@
 require 'ruby2d'
-require './map.rb'
 require './main.rb'
 
 set background: 'white'
@@ -41,9 +40,33 @@ $camera.img(
     collision: true,
 )
 ball = MovableRectangle.new(
-    camera: $camera
+    $camera,
+    y: -120,
+    width: 120,
+    height: 30
 )
 
+$camera.rectangle(
+    x: 0,
+    y: -145,
+    width: 100,
+    height: 100,
+    z: 20,
+    color: 'gray',
+    collision: true,
+    opacity: 1
+)
+$camera.rectangle(
+    x: 200,
+    y: -145,
+    width: 100,
+    height: 100,
+    z: 20,
+    color: 'gray',
+    collision: true,
+    opacity: 1
+)
+check = 0
 
 on :key_held do |event|
     if event.key == "w"
@@ -54,22 +77,26 @@ on :key_held do |event|
         $camera.collisionMove(0, -5)
     elsif event.key == "d"
         $camera.collisionMove(-5, 0)
+    elsif event.key == 'space'
+        if check == 3
+            check = 2
+        elsif check == 4
+            check = 0
+        end
     end
-    ball.update
 end
-circumsize = 0
 tick = 0
 update do
     if tick % 2 == 0
-        if circumsize == 0
-            ball.move(2, 0)
-            if ball.x == 70
-                circumsize = 1
+        if check == 0
+            ball.move(2, 0, $camera)
+            if ball.getX($camera) == 100
+                check = 3
             end
-        else
-            ball.move(-2, 0)
-            if ball.x == 30
-                circumsize = 0
+        elsif check == 2
+            ball.move(-2, 0, $camera)
+            if ball.getX($camera) == 0
+                check = 4
             end
         end
     end

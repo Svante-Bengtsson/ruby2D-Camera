@@ -1,16 +1,18 @@
-
 # Globala variabler för kamerans position
 $globalCamerax = 0
 $globalCameray = 0
 
 # Klass som representerar kartan
 class CMap
+    attr_accessor :x, :y
+
     # Initialiserar kartan med spelarens position och egenskaper
     def initialize(playerX: Window.width/2 - 5, playerY: Window.height/2 - 5, playerWidth: 10, playerHeight: 10, opacity: 1)
         @playerwidth = playerWidth
         @playerheight = playerHeight
         @px = playerX
         @py = playerY
+
         # Skapar spelarens hitbox
         @hitbox = Rectangle.new(
             x: @px - @playerwidth/2, y: @py - @playerheight/2,
@@ -19,11 +21,13 @@ class CMap
             z: 20
         )
         @hitbox.color.opacity = opacity
-        
-        # Kartan med objekt
+        @x = 0
+        @y = 0
+
+        # Lista som innehåller alla objekt på kartan
         @map = []
     end
-    
+
     # Kontrollerar kollision för ett givet koordinatpar (x, y)
     def collision?(x, y)
         check = false
@@ -35,32 +39,34 @@ class CMap
         return false
     end
 
-    # Flyttar kartan med ett visst avstånd (x, y)
+    # Flyttar alla objekt på kartan med ett visst avstånd (x, y)
     def move(x, y)
         for i in 0...@map.length
             @map[i].move(x, y)
         end
     end
 
+    # Flyttar ett specifikt objekt på kartan med ett visst avstånd (x, y)
     def moveObject(x, y, id)
         @map[id].move(x, y)
     end
 
+    # Returnerar x-koordinaten för ett specifikt objekt på kartan
     def getX(id)
         return @map[id].getX
     end
 
+    # Returnerar y-koordinaten för ett specifikt objekt på kartan
     def getY(id)
         return @map[id].getY
     end
-
 
     # Lägger till en rektangel till kartan
     def rectangle(x: 0, y: 0, width: 10, height: 10, color: 'black', collision: true, z: 10, opacity: 1)
         @map.append(MapObject.new(
             1, collision, [x, y, width, height, z, color, opacity]
         ))
-        return @map.length - 2
+        return @map.length - 1
     end
 
     # Lägger till en cirkel till kartan
@@ -68,26 +74,26 @@ class CMap
         @map.append(MapObject.new(
             2, collision, [x, y, radius, z, color, opacity]
         ))
-        return @map.length - 2
+        return @map.length - 1
     end
 
     # Lägger till en triangel till kartan
-    def triangle(x1: 50,  y1: 0, x2: 100, y2: 100, x3: 0,   y3: 100, color: 'black', collision: true, z: 100, opacity: 1)
+    def triangle(x1: 50, y1: 0, x2: 100, y2: 100, x3: 0, y3: 100, color: 'black', collision: true, z: 100, opacity: 1)
         @map.append(MapObject.new(
             3, collision, [x1, y1, x2, y2, x3, y3, color, z, opacity]
         ))
-        return @map.length - 2
+        return @map.length - 1
     end
 
     # Lägger till en bild till kartan
     def img(url: '', x: 0, y: 0, width: 10, height: 10, collision: true, z: 10, rotate: 0)
         if url == ''
-            raise 'no url when defining image'
+            raise StandardError.new('no url when defining image')
         end
         @map.append(MapObject.new(
             4, collision, [url, x, y, width, height, z, rotate]
         ))
-        return @map.length - 2
+        return @map.length - 1
     end
 
     # Kontrollerar kollision och flyttar spelaren
@@ -102,29 +108,55 @@ class CMap
         @collleftboth = false
         @collupboth = false
         @colldownboth = false
+        @tl = false
+        @tr = false
+        @bl = false
+        @br = false
+
+        # Kontrollera kollisioner med alla objekt på kartan
         for i in 0...@map.length
             if @map[i].collClose(@px, @py) && @map[i].coll
                 if (@map[i].contains?(@px - @playerwidth/2, @py - @playerheight/2) ||  @map[i].contains?(@px - @playerwidth/2, @py + @playerheight/2)) && x > 0
-                    @collright = true
-                elsif (@map[i].contains?(@px + @playerwidth/2, @py - @playerheight/2) || @map[i].contains?(@px + @playerwidth/2, @py + @playerheight/2)) && x < 0
                     @collleft = true
-                elsif (@map[i].contains?(@px - @playerwidth/2, @py - @playerheight/2) || @map[i].contains?(@px + @playerwidth/2, @py - @playerheight/2) ) && y > 0
+                end
+                if (@map[i].contains?(@px + @playerwidth/2, @py - @playerheight/2) || @map[i].contains?(@px + @playerwidth/2, @py + @playerheight/2)) && x < 0
+                    @collright = true
+                end
+                if (@map[i].contains?(@px - @playerwidth/2, @py - @playerheight/2) || @map[i].contains?(@px + @playerwidth/2, @py - @playerheight/2) ) && y > 0
                     @collup = true
-                elsif (@map[i].contains?(@px - @playerwidth/2, @py + @playerheight/2)  || @map[i].contains?(@px + @playerwidth/2, @py + @playerheight/2)) && y < 0
+                end
+                if (@map[i].contains?(@px - @playerwidth/2, @py + @playerheight/2)  || @map[i].contains?(@px + @playerwidth/2, @py + @playerheight/2)) && y < 0
                     @colldown = true
                 end
-
-                if (@map[i].contains?(@px - @playerwidth/2, @py - @playerheight/2) &&  @map[i].contains?(@px - @playerwidth/2, @py + @playerheight/2))
-                    @collrightboth = true
-                elsif (@map[i].contains?(@px + @playerwidth/2, @py - @playerheight/2) && @map[i].contains?(@px + @playerwidth/2, @py + @playerheight/2))
-                    @collleftboth = true
-                elsif (@map[i].contains?(@px - @playerwidth/2, @py - @playerheight/2) && @map[i].contains?(@px + @playerwidth/2, @py - @playerheight/2) )
-                    @collupboth = true
-                elsif (@map[i].contains?(@px - @playerwidth/2, @py + @playerheight/2)  && @map[i].contains?(@px + @playerwidth/2, @py + @playerheight/2))
-                    @colldownboth = true
+                if @map[i].contains?(@px -  @playerwidth/2, @py - @playerheight/2)
+                    @tl = true
+                end
+                if @map[i].contains?(@px +  @playerwidth/2, @py - @playerheight/2)
+                    @tr = true
+                end
+                if @map[i].contains?(@px -  @playerwidth/2, @py + @playerheight/2)
+                    @bl = true
+                end
+                if @map[i].contains?(@px +  @playerwidth/2, @py + @playerheight/2)
+                    @br = true
                 end
             end
         end
+        if @tl && @tr
+            @collupboth = true
+        end
+        if @bl && @br
+            @colldownboth = true
+        end
+        if @tl && @bl
+            @collleftboth = true
+        end
+        if @tr && @br
+            @collrightboth = true
+        end
+
+
+        # Bestämma riktning baserat på kollisioner
         if @collright
             if @collupboth || @colldownboth
             else
@@ -146,38 +178,69 @@ class CMap
                 falsey = 0
             end
         end
-        for
+        if @collupboth && @collleftboth
+            if x > 0
+                falsex = 0
+            elsif y > 0
+                falsey = 0
+            end
+        end
+        if @collupboth && @collrightboth
+            if x < 0
+                falsex = 0
+            elsif y < 0
+                falsey = 0
+            end
+        end
+        if @colldownboth && @collleftboth
+            if x > 0
+                falsex = 0
+            elsif y < 0
+                falsey = 0
+            end
+        end
+        if @colldownboth && @collrightboth
+            if x < 0
+                falsex = 0
+            elsif y < 0
+                falsey = 0
+            end
+        end
+        
+        
 
- i in 0...@map.length
+        # Flyttar alla objekt på kartan baserat på kollisionerna
+        for i in 0...@map.length
             @map[i].move(falsex, falsey)
         end
+
+        # Uppdaterar globala kamerans position
         $globalCamerax += falsex
         $globalCameray += falsey
     end
-    
+
     # Uppdaterar en specifik plats på kartan
     def mapWrite(cat, place, arg)
         @map[cat][place] = arg
     end
 end
 
-
 # Klass som representerar ett objekt på kartan
 class MapObject
-
     attr_accessor :coll
 
     # Initialiserar ett objekt med angiven typ, kollision och egenskaper
     def initialize(type, coll, arr)
         @type = type
         @coll = coll
+
         if @type == 1
             @object = Rectangle.new(
                 x: arr[0], y: arr[1],
                 width: arr[2], height: arr[3],
                 color: arr[5],
                 z: arr[4],
-                opacity: arr[6],
+                opacity: arr[6]
             )
             @midpointx = arr[0] + arr[2]/2
             @midpointy = arr[1] + arr[3]/2
@@ -185,9 +248,11 @@ class MapObject
             @object = Circle.new(
                 x: arr[0], y: arr[1],
                 radius: arr[2],
-                color: arr[4],
+                color: arr[
+
+4],
                 z: arr[3],
-                opacity: arr[5],
+                opacity: arr[5]
             )
             @midpointx = arr[0]
             @midpointy = arr[1]
@@ -215,18 +280,21 @@ class MapObject
         end
     end
 
+    # Returnerar objektets x-koordinat justerat med globala kamerans position
     def getX
-        return @object.x
+        return @object.x - $globalCamerax
     end
 
+    # Returnerar objektets y-koordinat justerat med globala kamerans position
     def getY
-        return @object.y
+        return @object.y - $globalCameray
     end
 
     # Flyttar objektet med angivet avstånd (x, y)
     def move(x, y)
         @midpointx += x
         @midpointy += y
+
         if @type == 1
             @object.x += x
             @object.y += y
@@ -256,57 +324,35 @@ class MapObject
         placeholderx = @midpointx - x
         placeholdery = @midpointy - y
         relation = Math.atan2(placeholdery, placeholderx)
-        newx = x + Math.cos(relation)*10
-        newy = y + Math.sin(relation)*10
-        return @object.contains?(newx, newy)
+        newx = Math.cos(relation)
+        newy = Math.sin(relation)
+        if @object.contains?(newx*5 + x, newy*5 + y) || @object.contains?(newx*10 + x, newy*10 + y) || @object.contains?(newx*15 + x, newy*15 + y) || @object.contains?(newx*20 + x, newy*20 + y)
+            return true
+        else
+            return false
+        end
     end
-
 end
 
 # Klass som representerar ett rörligt objekt på kartan
-class MovableMapObject
-    attr_accessor :x, :y
-    def initialize(x: 30, y: 45, width: 10, height: 10, z: 10, color: 'black', collision: false)
-        @width = width
-        @height = height
-        @x = x
-        @y = y
-        @object = Rectangle.new(
-            x: @x, y: @y,
-            width: @width, height: @height,
-            color: color,
-            z: z
-        )
-        @collup = false
-        @colldown = false
-        @collleft = false
-        @collright = false
-    end
-
-    # Flyttar objektet med angivet avstånd (x, y)
-    def move(x, y)
-        @x += x
-        @y += y
-        @object.x = $globalCamerax + @x
-        @object.y = $globalCameray + @y
-    end
-
-    # Uppdaterar objektets position
-    def update
-        @object.x = $globalCamerax + @x
-        @object.y = $globalCameray + @y
-    end
-end
-
 class MovableRectangle
-    def initialize(x: 0, y: 0, width: 10, height: 10, color: 'black', collision: true, z: 10, opacity: 1, camera: '')
+    # Initialiserar ett rörligt rektangulärt objekt
+    def initialize(camera, x: 0, y: 0, width: 10, height: 10, color: 'black', collision: true, z: 10, opacity: 1 )
         @id = camera.rectangle(x: x, y: y, width: width, height: height, color: color, collision: collision, z: z, opacity: opacity)
     end
 
+    # Flyttar objektet med angivet avstånd (x, y) via kameran
     def move(x, y, camera)
         camera.moveObject(x, y, @id)
     end
+
+    # Returnerar objektets x-koordinat via kameran
     def getX(camera)
-        return
+        return camera.getX(@id)
+    end
+
+    # Returnerar objektets y-koordinat via kameran
+    def getY(camera)
+        return camera.getY(@id)
     end
 end
